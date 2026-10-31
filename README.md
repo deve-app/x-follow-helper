@@ -46,8 +46,19 @@ A Chinese-UI X (Twitter) following-management Chrome extension: scan non-mutual 
 
 - [x] MVP：扫未互关 / 批量取关 / 白名单 / 任务日志
 - [x] v2：健康度分析 / 取关追踪 / 智能过滤
-- [ ] 商店上架（Chrome Web Store / Edge Add-ons）
 - [ ] 多账号支持
+- [x] 分发：GitHub Releases 提供 zip 包（开发者模式安装）
+
+## 支持 Support
+
+本项目完全开源免费。如果它帮到了你，欢迎随意赞赏 💛（自愿，无任何功能绑定）。
+
+This project is fully open-source and free. If it helps you, a small tip is welcome 💛 (voluntary, no features are tied to donations).
+
+<div align="center">
+  <img src="assets/alipay-qr.jpg" width="240" alt="支付宝赞赏码 Alipay tip QR" />
+  <p><b>支付宝赞赏码 · Alipay tip QR</b></p>
+</div>
 
 ## License
 
