@@ -253,6 +253,7 @@ async function processQueue() {
   if (running) return;
   running = true;
   try {
+    if (await finalizeIfNeeded()) return;
     let state = await getStored('unfollowState', null);
     while (state && state.active && !state.paused && state.queue.length > 0) {
       const limit = state.settings.dailyLimit || 0;
@@ -298,15 +299,8 @@ async function processQueue() {
       await sleep(randomDelay(min, max) * 1000);
       state = await getStored('unfollowState', null);
     }
-    // 完成 / 取消
-    const final = await getStored('unfollowState', null);
-    if (final && final.active && final.queue.length === 0) {
-      final.log.push({ type: 'done', text: t('taskDoneBg'), ts: Date.now() });
-      await setStored('unfollowState', final);
-      broadcast({ type: 'TASK_UPDATED' });
-      await saveHistory(final);
-      await clearState();
-    }
+    // 完成 / 取消（交给收尾兜底，防止 SW 挂起导致永远收不了尾）
+    await finalizeIfNeeded();
   } finally { running = false; }
 }
 
@@ -326,7 +320,27 @@ async function saveHistory(task) {
   await setStored('taskHistory', hist.slice(0, 20));
 }
 
+// ─── 收尾兜底：队列已空但没标记完成时，立即完成并归档 ────────────────
+// MV3 Service Worker 可能在任何 await 期间被挂起（30s 空闲超时），
+// 最后一项处理完后的收尾代码可能永远跑不到 → 卡在 N-1/N。
+// 这个函数在 alarm 唤醒 / TASK_STATUS 轮询 / processQueue 入口都调用，
+// 保证只要 SW 一活过来就能收尾。
+async function finalizeIfNeeded() {
+  const state = await getStored('unfollowState', null);
+  if (!state) return false;
+  if (state.active && !state.paused && state.queue.length === 0) {
+    state.log.push({ type: 'done', text: t('taskDoneBg'), ts: Date.now() });
+    await setStored('unfollowState', state);
+    broadcast({ type: 'TASK_UPDATED' });
+    await saveHistory(state);
+    await clearState();
+    return true;
+  }
+  return false;
+}
+
 async function resumeIfNeeded() {
+  if (await finalizeIfNeeded()) return;
   const state = await getStored('unfollowState', null);
   if (state && state.active && !state.paused && !running) processQueue();
 }
@@ -415,6 +429,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           break;
         }
         case 'TASK_STATUS': {
+          await finalizeIfNeeded();   // 轮询时兜底收尾（修复卡最后一项）
           const state = await getStored('unfollowState', null);
           sendResponse({ ok: true, data: state ? {
             done: state.done, total: state.total, paused: state.paused,
