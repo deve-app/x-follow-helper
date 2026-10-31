@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+  :root {
+    --bg:#000000; --card:#16181c; --card2:#1d2226; --border:#2f3336;
+    --text:#e7e9ea; --text2:#8b98a5; --accent:#1d9bf0; --accent2:#7856ff;
+    --danger:#f4212e; --success:#00ba7c; --warn:#ffd400;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--text); width:380px; min-height:100vh; -webkit-font-smoothing:antialiased; }
+  .header { padding:14px 16px 10px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .logo b { font-size:15px; }
+  .logo span { font-size:11px; color:var(--text2); display:block; font-weight:400; }
+  .btn-mini { width:32px; height:32px; border-radius:50%; background:var(--card2); border:1px solid var(--border); color:var(--text); cursor:pointer; font-size:14px; }
+  .tabs { display:flex; padding:0 12px; border-bottom:1px solid var(--border); }
+  .tab { flex:1; padding:11px 0; text-align:center; font-size:13px; color:var(--text2); border-bottom:3px solid transparent; cursor:pointer; }
+  .tab.active { color:var(--text); border-bottom-color:var(--accent); font-weight:600; }
+  .tab .badge { display:inline-block; min-width:16px; height:16px; line-height:16px; padding:0 4px; background:var(--accent); color:#fff; border-radius:8px; font-size:10px; font-weight:700; margin-left:3px; }
+  .panel { padding:12px 14px 14px; }
+  .summary { display:flex; gap:8px; margin-bottom:12px; }
+  .stat { flex:1; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:9px 12px; }
+  .stat .num { font-size:19px; font-weight:700; }
+  .stat .lbl { font-size:11px; color:var(--text2); margin-top:2px; }
+  .stat.bad .num { color:var(--warn); }
+  .list-head { display:flex; justify-content:space-between; font-size:12px; color:var(--text2); padding:4px; margin-bottom:6px; }
+  .list-head a { color:var(--accent); cursor:pointer; }
+  .item { display:flex; align-items:center; gap:9px; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:9px 11px; margin-bottom:7px; cursor:pointer; }
+  .item.selected { border-color:var(--accent); background:rgba(29,155,240,.06); }
+  .avatar { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#1d9bf0,#7856ff); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:14px; flex-shrink:0; }
+  .info { flex:1; min-width:0; }
+  .info .name { font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .info .handle { font-size:11px; color:var(--text2); }
+  .meta { display:flex; gap:8px; margin-top:3px; font-size:10px; color:var(--text2); }
+  .check { width:20px; height:20px; border-radius:6px; border:2px solid var(--border); flex-shrink:0; }
+  .item.selected .check { background:var(--accent); border-color:var(--accent); }
+  .actionbar { position:sticky; bottom:0; background:rgba(0,0,0,.93); border-top:1px solid var(--border); padding:10px 14px; display:flex; align-items:center; gap:8px; }
+  .actionbar .info { font-size:12px; color:var(--text2); }
+  .btn { border:none; border-radius:999px; padding:7px 16px; font-size:12px; font-weight:700; cursor:pointer; }
+  .btn.primary { background:var(--accent); color:#fff; }
+  .btn.danger { background:rgba(244,33,46,.15); color:var(--danger); }
+  .btn.ghost { background:var(--card2); color:var(--text); border:1px solid var(--border); }
+  .btn:disabled { opacity:.4; cursor:not-allowed; }
+  .task-box { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px 14px; }
+  .task-row { display:flex; justify-content:space-between; font-size:12px; margin-bottom:8px; }
+  .progress { height:6px; border-radius:3px; background:var(--border); overflow:hidden; }
+  .progress .fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2)); width:0%; transition:.4s; }
+  .task-log { margin-top:10px; max-height:170px; overflow-y:auto; font-size:11px; color:var(--text2); font-family:ui-monospace,Menlo,monospace; }
+  .task-log .ok { color:var(--success); } .task-log .skip { color:var(--warn); } .task-log .err { color:var(--danger); }
+  .empty { text-align:center; color:var(--text2); padding:36px 16px; font-size:12px; }
+  .hint { font-size:10px; color:var(--text2); text-align:center; padding:8px 10px 12px; }
+  .hint b { color:var(--warn); }
+  .loading { text-align:center; color:var(--text2); padding:24px; font-size:12px; }
+  .status-msg { font-size:11px; color:var(--accent); margin-top:8px; text-align:center; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo"><b>X 关注助手</b><span id="meLabel">未连接</span></div>
+  <button class="btn-mini" id="refreshBtn" title="刷新">⟳</button>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="clean">未互关<span class="badge" id="badgeClean">-</span></div>
+  <div class="tab" data-tab="task">任务</div>
+  <div class="tab" data-tab="whitelist">白名单</div>
+  <div class="tab" data-tab="analyze">分析</div>
+  <div class="tab" data-tab="settings">设置</div>
+</div>
+
+<!-- 未互关 -->
+<div id="panel-clean" class="panel">
+  <div class="summary">
+    <div class="stat"><div class="num" id="stFollowing">-</div><div class="lbl">关注</div></div>
+    <div class="stat"><div class="num" id="stFollowers">-</div><div class="lbl">粉丝</div></div>
+    <div class="stat bad"><div class="num" id="stNotFollow">-</div><div class="lbl">未互关</div></div>
+  </div>
+  <div id="scanBox" class="task-box" style="display:none;margin-bottom:10px">
+    <div class="task-row"><span id="scanPhase">正在抓取关注列表...</span><span id="scanPct"></span></div>
+    <div class="progress"><div class="fill" id="scanFill"></div></div>
+  </div>
+  <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;font-size:11px;color:var(--text2)">
+    <span>过滤</span>
+    粉丝≥<input id="fMinFlw" type="number" min="0" style="width:52px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 6px;font-size:11px">
+    帖≥<input id="fMinSt" type="number" min="0" style="width:52px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 6px;font-size:11px">
+    语言<select id="fLang" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 4px;font-size:11px">
+      <option value="">全部</option>
+      <option value="cjk">中日韩</option>
+      <option value="other">其他</option>
+    </select>
+  </div>
+  <div class="list-head"><span id="listInfo">正在扫描...</span><a id="selectAllLink">全选</a></div>
+  <div id="itemList"></div>
+  <div class="status-msg" id="scanStatus"></div>
+</div>
+
+<!-- 任务 -->
+<div id="panel-task" class="panel" style="display:none">
+  <div id="taskBox" class="task-box" style="display:none">
+    <div class="task-row"><span>批量取关任务</span><span id="taskStatus" style="color:var(--accent)">-</span></div>
+    <div class="progress"><div class="fill" id="taskProgress"></div></div>
+    <div class="task-row" style="margin-top:8px"><span id="taskCount">-</span>
+      <span>
+        <button class="btn ghost" id="pauseBtn" style="padding:3px 10px;font-size:11px">暂停</button>
+        <button class="btn ghost" id="stopBtn" style="padding:3px 10px;font-size:11px">停止</button>
+        <button class="btn ghost" id="exportBtn" style="padding:3px 10px;font-size:11px">导出 CSV</button>
+      </span>
+    </div>
+    <div class="task-log" id="taskLog"></div>
+  </div>
+  <div class="empty" id="taskEmpty">没有运行任务。在"未互关"页勾选账号开始。</div>
+  <div class="hint">安全策略：间隔 <b>20 秒+抖动</b>，每日上限 <b>100</b>，白名单跳过。</div>
+  <div class="task-row" style="margin-top:14px;font-size:12px;color:var(--text2)">最近任务</div>
+  <div id="taskHistory"></div>
+</div>
+
+<!-- 白名单 -->
+<div id="panel-whitelist" class="panel" style="display:none">
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <input id="wlInput" placeholder="输入 @用户名" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:12px;outline:none" />
+    <button class="btn primary" id="wlAddBtn">添加</button>
+  </div>
+  <div id="wlList"></div>
+  <div class="hint">白名单账号永远不会被取关。</div>
+</div>
+
+<!-- 分析 -->
+<div id="panel-analyze" class="panel" style="display:none">
+  <div class="empty" id="anNoData">先扫描一次，分析会基于扫描结果生成</div>
+  <div id="anContent" style="display:none">
+    <div class="summary">
+      <div class="stat"><div class="num" id="anMutual">-</div><div class="lbl">互关</div></div>
+      <div class="stat"><div class="num" id="anRate">-</div><div class="lbl">互关率</div></div>
+      <div class="stat bad"><div class="num" id="anZombie">-</div><div class="lbl">疑似僵尸/营销</div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">
+      <svg width="92" height="92" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#2f3336" stroke-width="10"/>
+        <circle id="anRing" cx="50" cy="50" r="42" fill="none" stroke="#00ba7c" stroke-width="10" stroke-linecap="round" stroke-dasharray="0 264" transform="rotate(-90 50 50)"/>
+      </svg>
+      <div style="font-size:11px;color:var(--text2)">互关率 = 互关数 ÷ 关注总数<br>数据来自最近一次扫描</div>
+    </div>
+    <div class="list-head"><span>疑似僵尸/营销号（规则打分 ≥3 标记）</span><a id="anExportBtn">导出报告</a></div>
+    <div id="anZombieList"></div>
+    <div class="list-head" style="margin-top:12px"><span>最活跃 Top 5</span></div>
+    <div id="anActiveList"></div>
+    <div class="list-head" style="margin-top:12px"><span>最不活跃 Top 5</span></div>
+    <div id="anInactiveList"></div>
+    <div class="list-head" style="margin-top:14px"><span>粉丝变化追踪（谁取关了你）</span><button class="btn ghost" id="anTrackBtn" style="padding:3px 10px;font-size:11px">检查粉丝变化</button></div>
+    <div class="status-msg" id="anTrackStatus"></div>
+    <div id="anTrackLost" style="display:none">
+      <div class="list-head"><span>取关你的人</span></div>
+      <div id="anLostList"></div>
+    </div>
+    <div id="anTrackGained" style="display:none">
+      <div class="list-head" style="margin-top:10px"><span>新粉丝</span></div>
+      <div id="anGainedList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 设置 -->
+<div id="panel-settings" class="panel" style="display:none">
+  <div class="task-box">
+    <div class="task-row"><span>取关间隔（秒）</span><input id="setInterval" type="number" min="5" step="1" style="width:70px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:12px"></div>
+    <div class="task-row"><span>间隔抖动（秒）</span><input id="setJitter" type="number" min="0" step="1" style="width:70px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:12px"></div>
+    <div class="task-row"><span>每日取关上限</span><input id="setDailyLimit" type="number" min="1" step="1" style="width:70px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:12px"></div>
+    <button class="btn primary" id="saveSettingsBtn" style="width:100%;margin-top:6px">保存设置</button>
+  </div>
+  <div class="hint">间隔越大越安全；每日上限建议 ≤100（X 风控红线）。<br>「跳过最新关注数」需关注时间数据，X 接口不提供，暂未实现。</div>
+</div>
+
+<div class="actionbar">
+  <div class="info">已选 <b id="selCount" style="color:var(--accent)">0</b></div>
+  <button class="btn danger" id="unfollowBtn" disabled>取关选中</button>
+</div>
+
+<script src="sidepanel.js"></script>
+</body>
+</html>
