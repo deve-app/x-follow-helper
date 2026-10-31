@@ -329,11 +329,14 @@ async function finalizeIfNeeded() {
   const state = await getStored('unfollowState', null);
   if (!state) return false;
   if (state.active && !state.paused && state.queue.length === 0) {
+    // 完成状态保留 ~60s 供 UI 轮询读取（否则 UI 永远看不到 完成 ✓，卡在 N-1/N）
+    state.active = false;
+    state.finishedAt = Date.now();
     state.log.push({ type: 'done', text: t('taskDoneBg'), ts: Date.now() });
     await setStored('unfollowState', state);
     broadcast({ type: 'TASK_UPDATED' });
     await saveHistory(state);
-    await clearState();
+    chrome.alarms.clear(KEEPALIVE_ALARM);   // 已完成，停掉保活 alarm
     return true;
   }
   return false;
@@ -431,6 +434,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         case 'TASK_STATUS': {
           await finalizeIfNeeded();   // 轮询时兜底收尾（修复卡最后一项）
           const state = await getStored('unfollowState', null);
+          // 完成状态展示超过 60s 后清理
+          if (state && !state.active && state.finishedAt && Date.now() - state.finishedAt > 60000) {
+            await clearState();
+            sendResponse({ ok: true, data: null });
+            break;
+          }
           sendResponse({ ok: true, data: state ? {
             done: state.done, total: state.total, paused: state.paused,
             queueLen: state.queue.length, log: state.log.slice(-50),

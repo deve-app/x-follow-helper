@@ -462,11 +462,16 @@ async function startTask() {
 
 async function pollTask() {
   const r = await chrome.runtime.sendMessage({ type: 'TASK_STATUS' });
-  if (!r || !r.ok || !r.data) { $('taskEmpty').style.display = ''; return; }
+  if (!r || !r.ok || !r.data) {
+    $('taskBox').style.display = 'none';
+    $('taskEmpty').style.display = '';
+    return;
+  }
   const tsk = r.data;
   $('taskBox').style.display = '';
   $('taskEmpty').style.display = 'none';
-  $('taskStatus').textContent = tsk.paused ? t('taskPaused') : (tsk.done >= tsk.total ? t('taskDone') : t('taskRunning'));
+  const finished = tsk.done >= tsk.total;
+  $('taskStatus').textContent = tsk.paused ? t('taskPaused') : (finished ? t('taskDone') : t('taskRunning'));
   $('taskProgress').style.width = (tsk.total ? Math.round(tsk.done / tsk.total * 100) : 0) + '%';
   $('taskCount').textContent = `${tsk.done} / ${tsk.total}`;
   const log = $('taskLog');
@@ -477,7 +482,17 @@ async function pollTask() {
     div.textContent = l.text;
     log.appendChild(div);
   });
-  if (tsk.done < tsk.total) setTimeout(pollTask, 2000);
+  if (finished) {
+    // 展示完成 3 秒后自动收起，任务列表下方显示历史
+    setTimeout(() => {
+      if ($('taskStatus').textContent === t('taskDone')) {
+        $('taskBox').style.display = 'none';
+        $('taskEmpty').style.display = '';
+      }
+    }, 3000);
+    return;
+  }
+  setTimeout(pollTask, 2000);
 }
 
 $('unfollowBtn').onclick = startTask;
