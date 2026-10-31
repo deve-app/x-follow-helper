@@ -7,6 +7,8 @@
 const BEARER = 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA';
 const KEEPALIVE_ALARM = 'x-helper-keepalive';
 
+const t = (k, subs) => chrome.i18n.getMessage(k, subs) || k;
+
 let authTokens = null;   // { csrf, userId, cookie }
 let authTabId = null;    // 提供令牌/API 代理的 x.com 标签页
 let running = false;
@@ -33,7 +35,7 @@ function makeTxId() {
 
 async function ensureAuth() {
   if (!authTokens) authTokens = await getStored('authTokens', null);
-  if (!authTokens || !authTokens.csrf) throw new Error('未连接——请打开 x.com 页面');
+  if (!authTokens || !authTokens.csrf) throw new Error(t('notConnected'));
   return authTokens;
 }
 
@@ -67,9 +69,9 @@ async function findContentTab() {
 
 // 经由 content script 的同源请求（自动带 cookie 会话）
 async function apiViaContent(url, options = {}) {
-  const t = await ensureAuth();
+  const auth = await ensureAuth();
   const tabId = await findContentTab();
-  if (!tabId) throw new Error('未连接——请打开 x.com 页面');
+  if (!tabId) throw new Error(t('notConnected'));
   const resp = await chrome.tabs.sendMessage(tabId, {
     type: 'API_FETCH',
     url,
@@ -77,7 +79,7 @@ async function apiViaContent(url, options = {}) {
     extraHeaders: options.headers || {},
     body: options.body || undefined,
   });
-  if (!resp || !resp.ok) throw new Error(resp?.error || '内容脚本无响应');
+  if (!resp || !resp.ok) throw new Error(resp?.error || t('contentNoResp'));
   return resp; // { ok, status, data }
 }
 
@@ -92,12 +94,12 @@ async function apiFetch(url, options = {}, cfg = {}) {
     try {
       res = await apiViaContent(url, options);
     } catch (e) {
-      if (attempt++ >= maxRetries) throw new Error('网络错误: ' + e.message);
+      if (attempt++ >= maxRetries) throw new Error(t('networkError') + e.message);
       await sleep(randomDelay(2000, 5000) * attempt);
       continue;
     }
     if (res.status === 429) {
-      if (attempt++ >= maxRetries) throw new Error('触发限流(429)，请稍后再试');
+      if (attempt++ >= maxRetries) throw new Error(t('rateLimited'));
       const wait = randomDelay(baseMin, baseMax) * attempt;
       broadcast({ type: 'rate_limited', wait });
       await sleep(wait);
@@ -114,7 +116,7 @@ async function fetchFollowingPage(userId, cursor) {
   });
   if (cursor && cursor !== '-1') params.set('cursor', cursor);
   const res = await apiFetch(`https://x.com/i/api/1.1/friends/list.json?${params}`);
-  if (res.status !== 200) throw new Error('关注列表接口 ' + res.status);
+  if (res.status !== 200) throw new Error(t('followingApiError') + res.status);
   return res.data;
 }
 
@@ -159,7 +161,7 @@ async function fetchFollowersPage(userId, cursor) {
   });
   if (cursor && cursor !== '-1') params.set('cursor', cursor);
   const res = await apiFetch(`https://x.com/i/api/1.1/followers/list.json?${params}`);
-  if (res.status !== 200) throw new Error('粉丝列表接口 ' + res.status);
+  if (res.status !== 200) throw new Error(t('followersApiError') + res.status);
   return res.data;
 }
 
@@ -215,8 +217,8 @@ async function unfollow(userId) {
     },
     body: new URLSearchParams({ user_id: userId }).toString(),
   }, { baseMin: 60000, baseMax: 120000 });
-  if (res.status === 401 || res.status === 403) throw new Error('登录失效，请重新打开 x.com');
-  if (res.status !== 200) throw new Error('取关失败 ' + res.status);
+  if (res.status === 401 || res.status === 403) throw new Error(t('loginExpired'));
+  if (res.status !== 200) throw new Error(t('unfollowFailed') + res.status);
   return res.data;
 }
 
@@ -269,7 +271,7 @@ async function processQueue() {
       const isWhitelisted = (state.settings.whitelist || []).some(w => (typeof w === 'object' ? w.id === user.id : w === user.id));
       if (isWhitelisted) {
         state.queue.shift(); state.done++;
-        state.log.push({ type: 'skip', text: `跳过白名单 @${user.screen_name}`, ts: Date.now() });
+        state.log.push({ type: 'skip', text: t('skipWl') + user.screen_name, ts: Date.now() });
         await setStored('unfollowState', state);
         broadcast({ type: 'TASK_UPDATED' });
         state = await getStored('unfollowState', null);
@@ -281,7 +283,7 @@ async function processQueue() {
         state.queue.shift(); state.done++;
         await setStored('unfollowState', state);
         await bumpDaily();
-        state.log.push({ type: 'ok', text: `已取关 @${user.screen_name}`, ts: Date.now() });
+        state.log.push({ type: 'ok', text: t('unfollowedOk') + user.screen_name, ts: Date.now() });
         broadcast({ type: 'TASK_UPDATED' });
       } catch (err) {
         state.queue.shift();
@@ -299,7 +301,7 @@ async function processQueue() {
     // 完成 / 取消
     const final = await getStored('unfollowState', null);
     if (final && final.active && final.queue.length === 0) {
-      final.log.push({ type: 'done', text: '任务完成', ts: Date.now() });
+      final.log.push({ type: 'done', text: t('taskDoneBg'), ts: Date.now() });
       await setStored('unfollowState', final);
       broadcast({ type: 'TASK_UPDATED' });
       await saveHistory(final);
@@ -373,8 +375,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           // 抓关注列表 + 批量互关检测 → 未互关列表
           chrome.alarms.create(KEEPALIVE_ALARM, { periodInMinutes: 0.4 });  // 防 SW 休眠中断长扫描
           try {
-            const t = await ensureAuth();
-            const users = await fetchAllFollowing(t.userId, n => broadcast({ type: 'SCAN_PROGRESS', phase: 'following', n }));
+            const auth = await ensureAuth();
+            const users = await fetchAllFollowing(auth.userId, n => broadcast({ type: 'SCAN_PROGRESS', phase: 'following', n }));
             const mutual = await checkMutuals(users.map(u => u.id), (checked, total) => broadcast({ type: 'SCAN_PROGRESS', phase: 'mutual', checked, total }));
             const notFollow = users.filter(u => !mutual[u.id]);
             sendResponse({ ok: true, data: { following: users, notFollow } });
@@ -388,7 +390,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           const daily = await getDaily();
           const remaining = Math.max(0, settings.dailyLimit - daily.count);
           const targets = msg.targets.slice(0, remaining);
-          const t = await startBatch(targets, settings, sender.tab?.id);
+          const tsk = await startBatch(targets, settings, sender.tab?.id);
           sendResponse({ ok: true, data: { accepted: targets.length, skipped: msg.targets.length - targets.length, dailyUsed: daily.count, dailyLimit: settings.dailyLimit } });
           break;
         }
@@ -404,7 +406,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             state.active = false;
             await setStored('unfollowState', state);
             if (state.log && state.log.length) {
-              state.log.push({ type: 'done', text: '任务已停止', ts: Date.now() });
+              state.log.push({ type: 'done', text: t('taskStopped'), ts: Date.now() });
               await saveHistory(state);
             }
           }
@@ -433,9 +435,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           break;
         case 'RESOLVE_USER': {
           // @用户名 → user_id（REST users/show.json；失败提示改用数字 ID）
-          const t = await ensureAuth();
+          const auth = await ensureAuth();
           const tabId = await findContentTab();
-          if (!tabId) throw new Error('未连接——请打开 x.com 页面');
+          if (!tabId) throw new Error(t('notConnected'));
           const resp = await chrome.tabs.sendMessage(tabId, {
             type: 'API_FETCH',
             url: `https://x.com/i/api/1.1/users/show.json?screen_name=${encodeURIComponent(msg.screen_name)}`,
@@ -443,9 +445,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             extraHeaders: { 'x-client-transaction-id': makeTxId() },
             body: undefined,
           });
-          if (!resp || !resp.ok) throw new Error(resp?.error || '内容脚本无响应');
+          if (!resp || !resp.ok) throw new Error(resp?.error || t('contentNoResp'));
           if (resp.status !== 200) {
-            sendResponse({ ok: false, error: `解析失败(${resp.status})，请改用数字 ID` });
+            sendResponse({ ok: false, error: t('resolveFailedBg', [String(resp.status)]) });
           } else {
             const u = resp.data;
             sendResponse({ ok: true, data: {
@@ -460,9 +462,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           // 抓全量粉丝 → 与上次快照对比 → 取关你的人 / 新粉丝
           chrome.alarms.create(KEEPALIVE_ALARM, { periodInMinutes: 0.4 });
           try {
-            const t = await ensureAuth();
+            const auth = await ensureAuth();
             const prev = await getStored('followersSnapshot', null);
-            const users = await fetchAllFollowers(t.userId, n => broadcast({ type: 'FOLLOWERS_PROGRESS', n }));
+            const users = await fetchAllFollowers(auth.userId, n => broadcast({ type: 'FOLLOWERS_PROGRESS', n }));
             const byId = {};
             for (const u of users) byId[u.id] = u;
             const newIds = new Set(users.map(u => u.id));
@@ -501,7 +503,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           sendResponse({ ok: true });
           break;
         default:
-          sendResponse({ ok: false, error: 'unknown: ' + msg.type });
+          sendResponse({ ok: false, error: t('unknownMsg') + msg.type });
       }
     } catch (e) {
       sendResponse({ ok: false, error: String(e?.message || e) });

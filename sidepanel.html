@@ -58,40 +58,40 @@
 <body>
 
 <div class="header">
-  <div class="logo"><b>X 关注助手</b><span id="meLabel">未连接</span></div>
-  <button class="btn-mini" id="refreshBtn" title="刷新">⟳</button>
+  <div class="logo"><b data-i18n="extName">X 关注助手</b><span id="meLabel" data-i18n="meNotConnected">未连接（请打开 x.com 页面）</span></div>
+  <button class="btn-mini" id="refreshBtn" data-i18n-title="refreshTitle" title="刷新">⟳</button>
 </div>
 
 <div class="tabs">
-  <div class="tab active" data-tab="clean">未互关<span class="badge" id="badgeClean">-</span></div>
-  <div class="tab" data-tab="task">任务</div>
-  <div class="tab" data-tab="whitelist">白名单</div>
-  <div class="tab" data-tab="analyze">分析</div>
-  <div class="tab" data-tab="settings">设置</div>
+  <div class="tab active" data-tab="clean"><span data-i18n="tabClean">未互关</span><span class="badge" id="badgeClean">-</span></div>
+  <div class="tab" data-tab="task"><span data-i18n="tabTask">任务</span></div>
+  <div class="tab" data-tab="whitelist"><span data-i18n="tabWhitelist">白名单</span></div>
+  <div class="tab" data-tab="analyze"><span data-i18n="tabAnalyze">分析</span></div>
+  <div class="tab" data-tab="settings"><span data-i18n="tabSettings">设置</span></div>
 </div>
 
 <!-- 未互关 -->
 <div id="panel-clean" class="panel">
   <div class="summary">
-    <div class="stat"><div class="num" id="stFollowing">-</div><div class="lbl">关注</div></div>
-    <div class="stat"><div class="num" id="stFollowers">-</div><div class="lbl">粉丝</div></div>
-    <div class="stat bad"><div class="num" id="stNotFollow">-</div><div class="lbl">未互关</div></div>
+    <div class="stat"><div class="num" id="stFollowing">-</div><div class="lbl" data-i18n="statFollowing">关注</div></div>
+    <div class="stat"><div class="num" id="stFollowers">-</div><div class="lbl" data-i18n="statFollowers">粉丝</div></div>
+    <div class="stat bad"><div class="num" id="stNotFollow">-</div><div class="lbl" data-i18n="statNotFollow">未互关</div></div>
   </div>
   <div id="scanBox" class="task-box" style="display:none;margin-bottom:10px">
-    <div class="task-row"><span id="scanPhase">正在抓取关注列表...</span><span id="scanPct"></span></div>
+    <div class="task-row"><span id="scanPhase" data-i18n="scanPhaseFetch">正在抓取关注列表...</span><span id="scanPct"></span></div>
     <div class="progress"><div class="fill" id="scanFill"></div></div>
   </div>
   <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;font-size:11px;color:var(--text2)">
-    <span>过滤</span>
-    粉丝≥<input id="fMinFlw" type="number" min="0" style="width:52px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 6px;font-size:11px">
-    帖≥<input id="fMinSt" type="number" min="0" style="width:52px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 6px;font-size:11px">
-    语言<select id="fLang" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 4px;font-size:11px">
-      <option value="">全部</option>
-      <option value="cjk">中日韩</option>
-      <option value="other">其他</option>
+    <span data-i18n="filterLabel">过滤</span>
+    <span data-i18n="filterMinFlw">粉丝≥</span><input id="fMinFlw" type="number" min="0" style="width:52px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 6px;font-size:11px">
+    <span data-i18n="filterMinSt">帖≥</span><input id="fMinSt" type="number" min="0" style="width:52px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 6px;font-size:11px">
+    <span data-i18n="filterLang">语言</span><select id="fLang" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 4px;font-size:11px">
+      <option value="" data-i18n="filterAll">全部</option>
+      <option value="cjk" data-i18n="filterCjk">中日韩</option>
+      <option value="other" data-i18n="filterOther">其他</option>
     </select>
   </div>
-  <div class="list-head"><span id="listInfo">正在扫描...</span><a id="selectAllLink">全选</a></div>
+  <div class="list-head"><span id="listInfo" data-i18n="listScanning">正在扫描...</span><a id="selectAllLink" data-i18n="selectAll">全选</a></div>
   <div id="itemList"></div>
   <div class="status-msg" id="scanStatus"></div>
 </div>
@@ -99,63 +99,63 @@
 <!-- 任务 -->
 <div id="panel-task" class="panel" style="display:none">
   <div id="taskBox" class="task-box" style="display:none">
-    <div class="task-row"><span>批量取关任务</span><span id="taskStatus" style="color:var(--accent)">-</span></div>
+    <div class="task-row"><span data-i18n="taskTitle">批量取关任务</span><span id="taskStatus" style="color:var(--accent)">-</span></div>
     <div class="progress"><div class="fill" id="taskProgress"></div></div>
     <div class="task-row" style="margin-top:8px"><span id="taskCount">-</span>
       <span>
-        <button class="btn ghost" id="pauseBtn" style="padding:3px 10px;font-size:11px">暂停</button>
-        <button class="btn ghost" id="stopBtn" style="padding:3px 10px;font-size:11px">停止</button>
-        <button class="btn ghost" id="exportBtn" style="padding:3px 10px;font-size:11px">导出 CSV</button>
+        <button class="btn ghost" id="pauseBtn" style="padding:3px 10px;font-size:11px" data-i18n="pause">暂停</button>
+        <button class="btn ghost" id="stopBtn" style="padding:3px 10px;font-size:11px" data-i18n="stop">停止</button>
+        <button class="btn ghost" id="exportBtn" style="padding:3px 10px;font-size:11px" data-i18n="exportCsv">导出 CSV</button>
       </span>
     </div>
     <div class="task-log" id="taskLog"></div>
   </div>
-  <div class="empty" id="taskEmpty">没有运行任务。在"未互关"页勾选账号开始。</div>
-  <div class="hint">安全策略：间隔 <b>20 秒+抖动</b>，每日上限 <b>100</b>，白名单跳过。</div>
-  <div class="task-row" style="margin-top:14px;font-size:12px;color:var(--text2)">最近任务</div>
+  <div class="empty" id="taskEmpty" data-i18n="taskEmpty">没有运行任务。在"未互关"页勾选账号开始。</div>
+  <div class="hint" data-i18n="taskHint">安全策略：间隔 <b>20 秒+抖动</b>，每日上限 <b>100</b>，白名单跳过。</div>
+  <div class="task-row" style="margin-top:14px;font-size:12px;color:var(--text2)" data-i18n="recentTasks">最近任务</div>
   <div id="taskHistory"></div>
 </div>
 
 <!-- 白名单 -->
 <div id="panel-whitelist" class="panel" style="display:none">
   <div style="display:flex;gap:8px;margin-bottom:10px">
-    <input id="wlInput" placeholder="输入 @用户名" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:12px;outline:none" />
-    <button class="btn primary" id="wlAddBtn">添加</button>
+    <input id="wlInput" data-i18n-ph="wlPlaceholder" placeholder="输入 @用户名" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:12px;outline:none" />
+    <button class="btn primary" id="wlAddBtn" data-i18n="add">添加</button>
   </div>
   <div id="wlList"></div>
-  <div class="hint">白名单账号永远不会被取关。</div>
+  <div class="hint" data-i18n="wlHint">白名单账号永远不会被取关。</div>
 </div>
 
 <!-- 分析 -->
 <div id="panel-analyze" class="panel" style="display:none">
-  <div class="empty" id="anNoData">先扫描一次，分析会基于扫描结果生成</div>
+  <div class="empty" id="anNoData" data-i18n="anNoData">先扫描一次，分析会基于扫描结果生成</div>
   <div id="anContent" style="display:none">
     <div class="summary">
-      <div class="stat"><div class="num" id="anMutual">-</div><div class="lbl">互关</div></div>
-      <div class="stat"><div class="num" id="anRate">-</div><div class="lbl">互关率</div></div>
-      <div class="stat bad"><div class="num" id="anZombie">-</div><div class="lbl">疑似僵尸/营销</div></div>
+      <div class="stat"><div class="num" id="anMutual">-</div><div class="lbl" data-i18n="anMutual">互关</div></div>
+      <div class="stat"><div class="num" id="anRate">-</div><div class="lbl" data-i18n="anRate">互关率</div></div>
+      <div class="stat bad"><div class="num" id="anZombie">-</div><div class="lbl" data-i18n="anZombie">疑似僵尸/营销</div></div>
     </div>
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">
       <svg width="92" height="92" viewBox="0 0 100 100">
         <circle cx="50" cy="50" r="42" fill="none" stroke="#2f3336" stroke-width="10"/>
         <circle id="anRing" cx="50" cy="50" r="42" fill="none" stroke="#00ba7c" stroke-width="10" stroke-linecap="round" stroke-dasharray="0 264" transform="rotate(-90 50 50)"/>
       </svg>
-      <div style="font-size:11px;color:var(--text2)">互关率 = 互关数 ÷ 关注总数<br>数据来自最近一次扫描</div>
+      <div style="font-size:11px;color:var(--text2)" data-i18n="anRateNote">互关率 = 互关数 ÷ 关注总数<br>数据来自最近一次扫描</div>
     </div>
-    <div class="list-head"><span>疑似僵尸/营销号（规则打分 ≥3 标记）</span><a id="anExportBtn">导出报告</a></div>
+    <div class="list-head"><span data-i18n="anZombieTitle">疑似僵尸/营销号（规则打分 ≥3 标记）</span><a id="anExportBtn" data-i18n="exportReport">导出报告</a></div>
     <div id="anZombieList"></div>
-    <div class="list-head" style="margin-top:12px"><span>最活跃 Top 5</span></div>
+    <div class="list-head" style="margin-top:12px"><span data-i18n="anActiveTop">最活跃 Top 5</span></div>
     <div id="anActiveList"></div>
-    <div class="list-head" style="margin-top:12px"><span>最不活跃 Top 5</span></div>
+    <div class="list-head" style="margin-top:12px"><span data-i18n="anInactiveTop">最不活跃 Top 5</span></div>
     <div id="anInactiveList"></div>
-    <div class="list-head" style="margin-top:14px"><span>粉丝变化追踪（谁取关了你）</span><button class="btn ghost" id="anTrackBtn" style="padding:3px 10px;font-size:11px">检查粉丝变化</button></div>
+    <div class="list-head" style="margin-top:14px"><span data-i18n="anTrackTitle">粉丝变化追踪（谁取关了你）</span><button class="btn ghost" id="anTrackBtn" style="padding:3px 10px;font-size:11px" data-i18n="checkFollowers">检查粉丝变化</button></div>
     <div class="status-msg" id="anTrackStatus"></div>
     <div id="anTrackLost" style="display:none">
-      <div class="list-head"><span>取关你的人</span></div>
+      <div class="list-head"><span data-i18n="anLostTitle">取关你的人</span></div>
       <div id="anLostList"></div>
     </div>
     <div id="anTrackGained" style="display:none">
-      <div class="list-head" style="margin-top:10px"><span>新粉丝</span></div>
+      <div class="list-head" style="margin-top:10px"><span data-i18n="anGainedTitle">新粉丝</span></div>
       <div id="anGainedList"></div>
     </div>
   </div>
@@ -164,17 +164,17 @@
 <!-- 设置 -->
 <div id="panel-settings" class="panel" style="display:none">
   <div class="task-box">
-    <div class="task-row"><span>取关间隔（秒）</span><input id="setInterval" type="number" min="5" step="1" style="width:70px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:12px"></div>
-    <div class="task-row"><span>间隔抖动（秒）</span><input id="setJitter" type="number" min="0" step="1" style="width:70px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:12px"></div>
-    <div class="task-row"><span>每日取关上限</span><input id="setDailyLimit" type="number" min="1" step="1" style="width:70px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:12px"></div>
-    <button class="btn primary" id="saveSettingsBtn" style="width:100%;margin-top:6px">保存设置</button>
+    <div class="task-row"><span data-i18n="setIntervalLabel">取关间隔（秒）</span><input id="setInterval" type="number" min="5" step="1" style="width:70px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:12px"></div>
+    <div class="task-row"><span data-i18n="setJitterLabel">间隔抖动（秒）</span><input id="setJitter" type="number" min="0" step="1" style="width:70px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:12px"></div>
+    <div class="task-row"><span data-i18n="setDailyLimitLabel">每日取关上限</span><input id="setDailyLimit" type="number" min="1" step="1" style="width:70px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:12px"></div>
+    <button class="btn primary" id="saveSettingsBtn" style="width:100%;margin-top:6px" data-i18n="saveSettings">保存设置</button>
   </div>
-  <div class="hint">间隔越大越安全；每日上限建议 ≤100（X 风控红线）。<br>「跳过最新关注数」需关注时间数据，X 接口不提供，暂未实现。</div>
+  <div class="hint" data-i18n="settingsHint">间隔越大越安全；每日上限建议 ≤100（X 风控红线）。<br>「跳过最新关注数」需关注时间数据，X 接口不提供，暂未实现。</div>
 </div>
 
 <div class="actionbar">
-  <div class="info">已选 <b id="selCount" style="color:var(--accent)">0</b></div>
-  <button class="btn danger" id="unfollowBtn" disabled>取关选中</button>
+  <div class="info"><span data-i18n="selectedCount">已选 </span><b id="selCount" style="color:var(--accent)">0</b></div>
+  <button class="btn danger" id="unfollowBtn" disabled data-i18n="unfollowSelected">取关选中</button>
 </div>
 
 <script src="sidepanel.js"></script>
